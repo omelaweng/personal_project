@@ -15,10 +15,10 @@ document.addEventListener("DOMContentLoaded", () => {
                 cell.dataset.row = row;
                 cell.dataset.col = col;
 
-                if (row < 3 && (row + col) % 2 !== 0) {
+                if (row < 2 && (row + col) % 2 !== 0) {
                     const piece = createPiece("red");
                     cell.appendChild(piece);
-                } else if (row > 4 && (row + col) % 2 !== 0) {
+                } else if (row > 5 && (row + col) % 2 !== 0) {
                     const piece = createPiece("blue");
                     cell.appendChild(piece);
                 }
