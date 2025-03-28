@@ -60,6 +60,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (rowDiff === 1 && colDiff === 1 && !targetCell.querySelector(".piece")) {
             targetCell.appendChild(selectedPiece);
+            checkKing(targetCell, selectedPiece);
             switchTurn();
         } else if (rowDiff === 2 && colDiff === 2) {
             const middleRow = (targetRow + startRow) / 2;
@@ -70,12 +71,21 @@ document.addEventListener("DOMContentLoaded", () => {
             if (middlePiece && middlePiece.dataset.color !== currentPlayer) {
                 middleCell.removeChild(middlePiece);
                 targetCell.appendChild(selectedPiece);
+                checkKing(targetCell, selectedPiece);
                 switchTurn();
             }
         }
 
         selectedPiece.classList.remove("selected");
         selectedPiece = null;
+    }
+
+    function checkKing(cell, piece) {
+        const row = parseInt(cell.dataset.row);
+        if ((piece.dataset.color === "red" && row === 7) || (piece.dataset.color === "blue" && row === 0)) {
+            piece.classList.add("king");
+            piece.innerText = "K";
+        }
     }
 
     function switchTurn() {
