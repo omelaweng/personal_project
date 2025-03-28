@@ -3,6 +3,7 @@
 document.addEventListener("DOMContentLoaded", () => {
     const board = document.getElementById("board");
     let selectedPiece = null;
+    let currentPlayer = "red";
 
     function createBoard() {
         board.innerHTML = "";
@@ -42,22 +43,48 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (selectedPiece) {
             movePiece(cell);
-        } else if (piece) {
+        } else if (piece && piece.dataset.color === currentPlayer) {
             selectedPiece = piece;
             piece.classList.add("selected");
         }
     }
 
     function movePiece(targetCell) {
-        if (!targetCell.querySelector(".piece") && targetCell.classList.contains("black")) {
+        const targetRow = parseInt(targetCell.dataset.row);
+        const targetCol = parseInt(targetCell.dataset.col);
+        const startRow = parseInt(selectedPiece.parentElement.dataset.row);
+        const startCol = parseInt(selectedPiece.parentElement.dataset.col);
+
+        const rowDiff = Math.abs(targetRow - startRow);
+        const colDiff = Math.abs(targetCol - startCol);
+
+        if (rowDiff === 1 && colDiff === 1 && !targetCell.querySelector(".piece")) {
             targetCell.appendChild(selectedPiece);
+            switchTurn();
+        } else if (rowDiff === 2 && colDiff === 2) {
+            const middleRow = (targetRow + startRow) / 2;
+            const middleCol = (targetCol + startCol) / 2;
+            const middleCell = document.querySelector(`.cell[data-row='${middleRow}'][data-col='${middleCol}']`);
+            const middlePiece = middleCell.querySelector(".piece");
+            
+            if (middlePiece && middlePiece.dataset.color !== currentPlayer) {
+                middleCell.removeChild(middlePiece);
+                targetCell.appendChild(selectedPiece);
+                switchTurn();
+            }
         }
+
         selectedPiece.classList.remove("selected");
         selectedPiece = null;
     }
 
+    function switchTurn() {
+        currentPlayer = currentPlayer === "red" ? "blue" : "red";
+    }
+
     document.getElementById("restart").addEventListener("click", () => {
         createBoard();
+        currentPlayer = "red";
     });
 
     createBoard();
