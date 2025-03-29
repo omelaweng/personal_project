@@ -33,7 +33,6 @@ document.addEventListener("DOMContentLoaded", () => {
         const piece = document.createElement("div");
         piece.classList.add("piece", color);
         piece.dataset.color = color;
-        piece.draggable = true;
         return piece;
     }
 
@@ -54,30 +53,89 @@ document.addEventListener("DOMContentLoaded", () => {
         const targetCol = parseInt(targetCell.dataset.col);
         const startRow = parseInt(selectedPiece.parentElement.dataset.row);
         const startCol = parseInt(selectedPiece.parentElement.dataset.col);
-
-        const rowDiff = Math.abs(targetRow - startRow);
+        const rowDiff = targetRow - startRow;
         const colDiff = Math.abs(targetCol - startCol);
 
-        if (rowDiff === 1 && colDiff === 1 && !targetCell.querySelector(".piece")) {
-            targetCell.appendChild(selectedPiece);
-            checkKing(targetCell, selectedPiece);
-            switchTurn();
-        } else if (rowDiff === 2 && colDiff === 2) {
-            const middleRow = (targetRow + startRow) / 2;
-            const middleCol = (targetCol + startCol) / 2;
-            const middleCell = document.querySelector(`.cell[data-row='${middleRow}'][data-col='${middleCol}']`);
-            const middlePiece = middleCell.querySelector(".piece");
-            
-            if (middlePiece && middlePiece.dataset.color !== currentPlayer) {
-                middleCell.removeChild(middlePiece);
+        if (selectedPiece.classList.contains("king")) {
+            if (isValidKingMove(startRow, startCol, targetRow, targetCol)) {
+                capturePiecesAlongPath(startRow, startCol, targetRow, targetCol);
                 targetCell.appendChild(selectedPiece);
                 checkKing(targetCell, selectedPiece);
                 switchTurn();
+            }
+        } else {
+            const direction = selectedPiece.dataset.color === "red" ? 1 : -1;
+            if (rowDiff === direction && colDiff === 1 && !targetCell.querySelector(".piece") && !hasMandatoryJump()) {
+                targetCell.appendChild(selectedPiece);
+                checkKing(targetCell, selectedPiece);
+                switchTurn();
+            } else if (Math.abs(rowDiff) === 2 && colDiff === 2) {
+                const middleRow = (targetRow + startRow) / 2;
+                const middleCol = (targetCol + startCol) / 2;
+                const middleCell = document.querySelector(`.cell[data-row='${middleRow}'][data-col='${middleCol}']`);
+                const middlePiece = middleCell?.querySelector(".piece");
+
+                if (middlePiece && middlePiece.dataset.color !== currentPlayer) {
+                    middleCell.removeChild(middlePiece);
+                    targetCell.appendChild(selectedPiece);
+                    checkKing(targetCell, selectedPiece);
+                    switchTurn();
+                }
             }
         }
 
         selectedPiece.classList.remove("selected");
         selectedPiece = null;
+    }
+
+    function isValidKingMove(startRow, startCol, targetRow, targetCol) {
+        const rowDiff = Math.abs(targetRow - startRow);
+        const colDiff = Math.abs(targetCol - startCol);
+        return rowDiff === colDiff;
+    }
+
+    function capturePiecesAlongPath(startRow, startCol, targetRow, targetCol) {
+        const rowStep = targetRow > startRow ? 1 : -1;
+        const colStep = targetCol > startCol ? 1 : -1;
+        let row = startRow + rowStep;
+        let col = startCol + colStep;
+
+        while (row !== targetRow && col !== targetCol) {
+            const middleCell = document.querySelector(`.cell[data-row='${row}'][data-col='${col}']`);
+            const middlePiece = middleCell?.querySelector(".piece");
+            if (middlePiece && middlePiece.dataset.color !== currentPlayer) {
+                middleCell.removeChild(middlePiece);
+            }
+            row += rowStep;
+            col += colStep;
+        }
+    }
+
+    function hasMandatoryJump() {
+        const pieces = document.querySelectorAll(`.piece.${currentPlayer}`);
+        for (let piece of pieces) {
+            const cell = piece.parentElement;
+            const row = parseInt(cell.dataset.row);
+            const col = parseInt(cell.dataset.col);
+            const directions = piece.classList.contains("king")
+                ? [[1, -1], [1, 1], [-1, -1], [-1, 1]]
+                : (currentPlayer === "red" ? [[1, -1], [1, 1]] : [[-1, -1], [-1, 1]]);
+            for (let [rowDir, colDir] of directions) {
+                const middleRow = row + rowDir;
+                const middleCol = col + colDir;
+                const targetRow = row + rowDir * 2;
+                const targetCol = col + colDir * 2;
+                const middleCell = document.querySelector(`.cell[data-row='${middleRow}'][data-col='${middleCol}']`);
+                const targetCell = document.querySelector(`.cell[data-row='${targetRow}'][data-col='${targetCol}']`);
+                if (middleCell && targetCell && !targetCell.querySelector(".piece")) {
+                    const middlePiece = middleCell.querySelector(".piece");
+                    if (middlePiece && middlePiece.dataset.color !== currentPlayer) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
     }
 
     function checkKing(cell, piece) {
